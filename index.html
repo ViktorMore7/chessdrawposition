@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess Draw Detective</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap');
+    
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%);
+      min-height: 100vh;
+    }
+    
+    h1, h2, h3 {
+      font-family: 'Fredoka One', cursive;
+    }
+    
+    .detective-mascot {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .card {
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+    
+    .chess-piece {
+      font-size: 2.5rem;
+    }
+    
+    .quiz-option {
+      transition: all 0.3s ease;
+    }
+    
+    .quiz-option:hover {
+      transform: scale(1.02);
+    }
+    
+    .badge {
+      transition: all 0.5s ease;
+    }
+    
+    .badge.locked {
+      filter: grayscale(100%);
+      opacity: 0.7;
+    }
+    
+    .badge.unlocked {
+      animation: unlock 0.8s ease;
+    }
+    
+    @keyframes unlock {
+      0% { transform: scale(0.8); opacity: 0.7; }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .draggable {
+      cursor: grab;
+    }
+    
+    .draggable:active {
+      cursor: grabbing;
+    }
+    
+    .board-square {
+      transition: all 0.2s ease;
+    }
+    
+    .board-square:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+  <!-- Header Section -->
+  <header class="text-center mb-10">
+    <div class="flex justify-center items-center gap-4 mb-4">
+      <i data-lucide="magnifying-glass" class="detective-mascot" style="color: #d97706; font-size: 3.5rem;"></i>
+      <i data-lucide="crown" class="detective-mascot" style="color: #f59e0b; font-size: 3rem;"></i>
+    </div>
+    <h1 class="text-4xl md:text-5xl text-blue-900 mb-2">Chess Draw Detective</h1>
+    <p class="text-lg text-blue-700">Learn the 5 Special Draw Rules!</p>
+  </header>
+
+  <!-- Name Input Modal -->
+  <div id="nameModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full">
+      <h3 class="text-2xl font-bold text-blue-900 mb-4">Welcome, Detective!</h3>
+      <p class="mb-6 text-gray-700">What's your name, Detective?</p>
+      <input type="text" id="playerName" placeholder="Enter your name" class="w-full p-3 border-2 border-blue-300 rounded-xl mb-4 focus:outline-none focus:border-blue-600">
+      <button onclick="startGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors">
+        Start Investigation!
+      </button>
+    </div>
+  </div>
+
+  <!-- Section 1: Briefing Room -->
+  <section id="briefingRoom" class="mb-16">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl text-blue-900 mb-2">Your Detective Briefing</h2>
+      <p class="text-lg text-blue-700">Learn the 5 special draw rules to solve cases!</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Stalemate Card -->
+      <div class="card bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-300 shadow-lg" onclick="readCard(this, 'stalemate')">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="alert-circle" class="text-5xl text-blue-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-center mb-2 text-blue-900">Stalemate</h3>
+        <p class="text-center text-gray-700 mb-3">You have no legal move, but your king is NOT in check. It's a draw!</p>
+        <div class="bg-white rounded-xl p-3 text-center text-sm">
+          <div class="font-bold text-blue-700 mb-1">Mini-Example:</div>
+          <div class="grid grid-cols-4 gap-1 w-32 mx-auto text-center">
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-gray-200">♟</div>
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-white">♔</div>
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-gray-200"></div>
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-white"></div>
+          </div>
+          <p class="mt-2 text-xs text-gray-600">King has no safe square!</p>
+        </div>
+      </div>
+
+      <!-- Dead Position Card -->
+      <div class="card bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-300 shadow-lg" onclick="readCard(this, 'deadPosition')">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="minus-circle" class="text-5xl text-green-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-center mb-2 text-green-900">Dead Position</h3>
+        <p class="text-center text-gray-700 mb-3">Not enough pieces to checkmate (e.g., King vs King).</p>
+        <div class="bg-white rounded-xl p-3 text-center text-sm">
+          <div class="font-bold text-green-700 mb-1">Mini-Example:</div>
+          <div class="grid grid-cols-4 gap-1 w-32 mx-auto text-center">
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-gray-200"></div>
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-white">♔</div>
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-gray-200"></div>
+            <div class="border border-gray-300 h-8 flex items-center justify-center bg-white">♔</div>
+          </div>
+          <p class="mt-2 text-xs text-gray-600">Cannot checkmate with just 2 kings!</p>
+        </div>
+      </div>
+
+      <!-- Agreement Card -->
+      <div class="card bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border-2 border-purple-300 shadow-lg" onclick="readCard(this, 'agreement')">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="handshake" class="text-5xl text-purple-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-center mb-2 text-purple-900">Agreement</h3>
+        <p class="text-center text-gray-700 mb-3">Both players say "yes" to a draw.</p>
+        <div class="bg-white rounded-xl p-3 text-center text-sm">
+          <div class="font-bold text-purple-700 mb-1">Mini-Example:</div>
+          <div class="flex justify-center gap-2 items-center">
+            <div class="bg-purple-100 px-3 py-1 rounded-full">"Is it a draw?"</div>
+            <i data-lucide="message-circle" class="text-purple-600"></i>
+            <div class="bg-purple-100 px-3 py-1 rounded-full">"Yes, draw!"</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Threefold Repetition Card -->
+      <div class="card bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-6 border-2 border-yellow-300 shadow-lg" onclick="readCard(this, 'threefold')">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="repeat" class="text-5xl text-yellow-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-center mb-2 text-yellow-900">Threefold Repetition</h3>
+        <p class="text-center text-gray-700 mb-3">Same position happens three times with same moves possible.</p>
+        <div class="bg-white rounded-xl p-3 text-center text-sm">
+          <div class="font-bold text-yellow-700 mb-1">Mini-Example:</div>
+          <div class="flex justify-center gap-1">
+            <i data-lucide="repeat" class="text-yellow-600"></i>
+            <i data-lucide="repeat" class="text-yellow-600"></i>
+            <i data-lucide="repeat" class="text-yellow-600"></i>
+          </div>
+          <p class="mt-2 text-xs text-gray-600">Position repeated 3 times!</p>
+        </div>
+      </div>
+
+      <!-- 50-Move Rule Card -->
+      <div class="card bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-orange-300 shadow-lg" onclick="readCard(this, 'fiftyMove')">
+        <div class="flex justify-center mb-4">
+          <i data-lucide="clock" class="text-5xl text-orange-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-center mb-2 text-orange-900">50-Move Rule</h3>
+        <p class="text-center text-gray-700 mb-3">50 moves each with no pawn move and no capture.</p>
+        <div class="bg-white rounded-xl p-3 text-center text-sm">
+          <div class="font-bold text-orange-700 mb-1">Mini-Example:</div>
+          <div class="flex justify-center">
+            <div class="bg-orange-100 px-3 py-1 rounded-full">50 moves</div>
+            <i data-lucide="minus" class="text-orange-600 mx-2"></i>
+            <div class="bg-orange-100 px-3 py-1 rounded-full">No pawn move</div>
+            <i data-lucide="and" class="text-orange-600 mx-2"></i>
+            <div class="bg-orange-100 px-3 py-1 rounded-full">No capture</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Investigation -->
+  <section id="investigation" class="hidden mb-16">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl text-blue-900 mb-2">Solve the Cases!</h2>
+      <p class="text-lg text-blue-700">Use your detective skills to identify draw positions</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="mb-8">
+      <div class="flex justify-between mb-2">
+        <span class="font-bold text-blue-800">Case</span>
+        <span class="font-bold text-blue-800" id="progressText">1 of 10</span>
+      </div>
+      <div class="w-full bg-gray-300 rounded-full h-4">
+        <div id="progressBar" class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Quiz Container -->
+    <div id="quizContainer" class="bg-white rounded-2xl p-6 shadow-xl border-2 border-blue-300">
+      <div class="flex justify-center mb-6">
+        <div id="questionImage" class="bg-blue-50 rounded-xl p-4">
+          <i data-lucide="puzzle" class="text-6xl text-blue-400"></i>
+        </div>
+      </div>
+      
+      <h3 id="questionText" class="text-xl font-bold text-center mb-6 text-gray-800">Question goes here</h3>
+      
+      <div id="answerOptions" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Options will be dynamically inserted here -->
+      </div>
+      
+      <div id="feedbackSection" class="hidden mt-6 p-4 rounded-xl">
+        <h4 id="feedbackTitle" class="font-bold text-center text-lg mb-2"></h4>
+        <p id="feedbackMessage" class="text-center mb-4"></p>
+        <button id="nextCaseBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors">
+          Next Case
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Evidence Board -->
+  <section id="evidenceBoard" class="hidden">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl text-blue-900 mb-2">Your Evidence Board</h2>
+      <p class="text-lg text-blue-700">Collect badges for each type of draw you master!</p>
+    </div>
+
+    <div id="badgesContainer" class="flex flex-wrap justify-center gap-8">
+      <!-- Badges will be dynamically inserted here -->
+    </div>
+
+    <!-- Master Detective Certificate -->
+    <div id="masterCertificate" class="hidden mt-12 text-center">
+      <div class="border-4 border-amber-400 rounded-3xl p-8 bg-gradient-to-br from-amber-50 to-yellow-50">
+        <i data-lucide="award" class="text-6xl text-amber-600 mx-auto mb-4"></i>
+        <h2 class="text-4xl font-bold text-amber-800 mb-4">Master Detective Certificate</h2>
+        <p class="text-xl text-gray-700 mb-2">This certifies that</p>
+        <h3 id="certificateName" class="text-3xl font-bold text-blue-800 mb-6">[Player Name]</h3>
+        <p class="text-lg text-gray-700 mb-4">has successfully completed the Chess Draw Detective training!</p>
+        <div class="flex justify-center gap-4 mb-6">
+          <i data-lucide="star" class="text-yellow-500 text-3xl"></i>
+          <i data-lucide="star" class="text-yellow-500 text-3xl"></i>
+          <i data-lucide="star" class="text-yellow-500 text-3xl"></i>
+          <i data-lucide="star" class="text-yellow-500 text-3xl"></i>
+          <i data-lucide="star" class="text-yellow-500 text-3xl"></i>
+        </div>
+        <p class="text-sm text-gray-600 mb-4">Date: <span id="certificateDate"></span></p>
+        <button onclick="window.print()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-xl transition-colors">
+          Print Certificate
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="text-center mt-12 p-6 bg-white rounded-xl shadow-lg">
+    <p class="text-gray-700 mb-2">You're learning important chess rules!</p>
+    <p class="text-sm text-gray-500">Created with ❤️ for young chess detectives</p>
+  </footer>
+
+  <!-- Sound Effects -->
+  <div id="audioContainer" class="hidden">
+    <audio id="correctSound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU" data-base64="data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAAAAAAAAAZGF0YQAAAAA="></audio>
+    <audio id="wrongSound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
+    <audio id="badgeSound" src="data:audio/wav;base64,UklGRm9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
+    <audio id="successSound" src="data:audio/wav;base64,UklGRnBvT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
+  </div>
+
+  <script>
+    // Game State
+    let gameState = {
+      playerName: '',
+      currentCase: 1,
+      totalCases: 10,
+      score: 0,
+      badges: {
+        stalemate: false,
+        deadPosition: false,
+        agreement: false,
+        threefold: false,
+        fiftyMove: false
+      }
+    };
+
+    // Quiz Questions
+    const questions = [
+      {
+        type: 'stalemate',
+        question: "It's Black's turn. Black's king has no legal move but is NOT in check. What happens?",
+        options: [
+          "White wins by checkmate",
+          "It is a draw by stalemate",
+          "Black wins"
+        ],
+        correct: 1,
+        image: '<i data-lucide="alert-circle" class="text-5xl text-blue-600"></i>',
+        feedback: "Correct! Stalemate is a surprise draw when the king has no moves but isn't in check!",
+        hint: "Remember: Stalemate happens when the king has no legal moves but is NOT in check."
+      },
+      {
+        type: 'deadPosition',
+        question: "White has only a king. Black has only a king. White's time runs out. What is the result?",
+        options: [
+          "Black wins by time",
+          "It is a draw (dead position)",
+          "White wins"
+        ],
+        correct: 1,
+        image: '<i data-lucide="minus-circle" class="text-5xl text-green-600"></i>',
+        feedback: "Great job! With only kings, checkmate is impossible, so it's a draw!",
+        hint: "Remember: Dead position means not enough pieces to checkmate."
+      },
+      {
+        type: 'agreement',
+        question: "Both players think the game is equal. They both say 'draw'. What happens?",
+        options: [
+          "White wins by default",
+          "It continues for another 10 moves",
+          "The game ends in a draw by agreement"
+        ],
+        correct: 2,
+        image: '<i data-lucide="handshake" class="text-5xl text-purple-600"></i>',
+        feedback: "Correct! When both players agree, the game ends in a draw!",
+        hint: "Remember: Agreement means both players say 'yes' to a draw."
+      },
+      {
+        type: 'threefold',
+        question: "The same chess position happens three times with the same possible moves. What can a player claim?",
+        options: [
+          "A win by repetition",
+          "A draw by threefold repetition",
+          "The game continues forever"
+        ],
+        correct: 1,
+        image: '<i data-lucide="repeat" class="text-5xl text-yellow-600"></i>',
+        feedback: "Excellent! The same position three times means a draw!",
+        hint: "Remember: Threefold repetition is when the same position happens three times."
+      },
+      {
+        type: 'fiftyMove',
+        question: "50 moves have been made by each player with no pawn move and no capture. What can a player claim?",
+        options: [
+          "A win by endurance",
+          "A draw by the 50-move rule",
+          "The game is abandoned"
+        ],
+        correct: 1,
+        image: '<i data-lucide="clock" class="text-5xl text-orange-600"></i>',
+        feedback: "Correct! After 50 moves with no pawn move or capture, it's a draw!",
+        hint: "Remember: The 50-move rule is when 50 moves each happen with no pawn move and no capture."
+      },
+      {
+        type: 'stalemate',
+        question: "True or False: If you are in check and have no move, it is stalemate.",
+        options: [
+          "True",
+          "False",
+          "Maybe"
+        ],
+        correct: 1,
+        image: '<i data-lucide="triangle-alert" class="text-5xl text-red-600"></i>',
+        feedback: "False! If you're in check and have no move, it's checkmate, not stalemate.",
+        hint: "Remember: Stalemate is when the king has NO moves but is NOT in check."
+      },
+      {
+        type: 'deadPosition',
+        question: "White has a king and a bishop. Black has only a king. White's time runs out. What is the result?",
+        options: [
+          "Black wins by time",
+          "It is a draw (dead position)",
+          "White wins"
+        ],
+        correct: 1,
+        image: '<i data-lucide="circle-dot" class="text-5xl text-green-600"></i>',
+        feedback: "Correct! With king and bishop vs king, checkmate is impossible, so it's a draw!",
+        hint: "Remember: Dead position includes king vs king, king+bishop vs king, or king+knight vs king."
+      },
+      {
+        type: 'agreement',
+        question: "Anna says 'I offer a draw.' Tom says 'I accept.' What happens?",
+        options: [
+          "The game continues",
+          "It is a draw by agreement",
+          "Anna wins"
+        ],
+        correct: 1,
+        image: '<i data-lucide="thumbs-up" class="text-5xl text-purple-600"></i>',
+        feedback: "Great detective work! When one player offers and the other accepts, it's a draw!",
+        hint: "Remember: Agreement is when both players say 'yes' to a draw."
+      },
+      {
+        type: 'fiftyMove',
+        question: "In the 50-move rule, what must NOT happen during those 50 moves?",
+        options: [
+          "Pawn moves and captures",
+          "King moves",
+          "Rook moves"
+        ],
+        correct: 0,
+        image: '<i data-lucide="禁止" class="text-5xl text-orange-600"></i>',
+        feedback: "Correct! The 50-move rule requires NO pawn moves and NO captures!",
+        hint: "Remember: The 50-move rule needs 50 moves each with no pawn move and no capture."
+      },
+      {
+        type: 'threefold',
+        question: "Same position happens three times. Who can claim the draw?",
+        options: [
+          "Only the player with the white pieces",
+          "Only the player with the black pieces",
+          "Either player"
+        ],
+        correct: 2,
+        image: '<i data-lucide="users" class="text-5xl text-yellow-600"></i>',
+        feedback: "Correct! Either player can claim a draw when the same position happens three times!",
+        hint: "Remember: Threefold repetition can be claimed by either player."
+      }
+    ];
+
+    // Initialize game
+    function startGame() {
+      const nameInput = document.getElementById('playerName').value.trim();
+      if (nameInput) {
+        gameState.playerName = nameInput;
+        document.getElementById('nameModal').classList.add('hidden');
+        document.getElementById('investigation').classList.remove('hidden');
+        document.getElementById('certificateName').textContent = gameState.playerName;
+        document.getElementById('certificateDate').textContent = new Date().toLocaleDateString();
+        loadQuestion();
+        renderBadges();
+        lucide.createIcons();
+      } else {
+        alert("Please enter your name, Detective!");
+      }
+    }
+
+    // Load a question
+    function loadQuestion() {
+      const question = questions[gameState.currentCase - 1];
+      
+      // Update progress
+      document.getElementById('progressText').textContent = `Case ${gameState.currentCase} of ${gameState.totalCases}`;
+      const progressPercent = ((gameState.currentCase - 1) / gameState.totalCases) * 100;
+      document.getElementById('progressBar').style.width = `${progressPercent}%`;
+      
+      // Set question content
+      document.getElementById('questionText').textContent = question.question;
+      document.getElementById('questionImage').innerHTML = question.image;
+      
+      // Clear previous answer options
+      const optionsContainer = document.getElementById('answerOptions');
+      optionsContainer.innerHTML = '';
+      
+      // Create answer buttons
+      question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.className = 'quiz-option bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 rounded-xl p-4 text-lg font-semibold text-blue-900 transition-colors';
+        button.textContent = option;
+        button.onclick = () => checkAnswer(index);
+        optionsContainer.appendChild(button);
+      });
+      
+      // Hide feedback
+      document.getElementById('feedbackSection').classList.add('hidden');
+    }
+
+    // Check answer
+    function checkAnswer(selectedIndex) {
+      const question = questions[gameState.currentCase - 1];
+      const buttons = document.getElementById('answerOptions').children;
+      
+      // Disable all buttons
+      for (let button of buttons) {
+        button.disabled = true;
+        button.classList.add('opacity-70', 'cursor-not-allowed');
+      }
+      
+      // Highlight selected button
+      if (selectedIndex === question.correct) {
+        buttons[selectedIndex].classList.remove('bg-blue-100', 'border-blue-400');
+        buttons[selectedIndex].classList.add('bg-green-100', 'border-green-500');
+        
+        // Play correct sound
+        playCorrectSound();
+        
+        // Update badge if needed
+        if (!gameState.badges[question.type]) {
+          gameState.badges[question.type] = true;
+          gameState.score++;
+          playBadgeSound();
+          updateBadge(question.type);
+        }
+      } else {
+        buttons[selectedIndex].classList.remove('bg-blue-100', 'border-blue-400');
+        buttons[selectedIndex].classList.add('bg-red-100', 'border-red-500');
+        
+        // Play wrong sound
+        playWrongSound();
+        
+        // Highlight correct answer
+        buttons[question.correct].classList.remove('bg-blue-100', 'border-blue-400');
+        buttons[question.correct].classList.add('bg-green-100', 'border-green-500');
+      }
+      
+      // Show feedback
+      const feedbackSection = document.getElementById('feedbackSection');
+      feedbackSection.classList.remove('hidden');
+      
+      const feedbackTitle = document.getElementById('feedbackTitle');
+      const feedbackMessage = document.getElementById('feedbackMessage');
+      
+      if (selectedIndex === question.correct) {
+        feedbackTitle.textContent = "🌟 Great detective work!";
+        feedbackTitle.className = "font-bold text-center text-lg mb-2 text-green-700";
+        feedbackMessage.textContent = question.feedback;
+        feedbackMessage.className = "text-center text-green-800";
+        
+        // Check if all badges are collected
+        if (Object.values(gameState.badges).every(value => value)) {
+          setTimeout(() => {
+            document.getElementById('evidenceBoard').classList.remove('hidden');
+            document.getElementById('masterCertificate').classList.remove('hidden');
+            playSuccessSound();
+          }, 2000);
+        }
+      } else {
+        feedbackTitle.textContent = "🤔 Not quite, Detective!";
+        feedbackTitle.className = "font-bold text-center text-lg mb-2 text-red-700";
+        feedbackMessage.textContent = question.hint;
+        feedbackMessage.className = "text-center text-red-800";
+      }
+    }
+
+    // Next case button
+    document.getElementById('nextCaseBtn').onclick = () => {
+      gameState.currentCase++;
+      
+      if (gameState.currentCase > gameState.totalCases) {
+        // Show evidence board if not already shown
+        if (!document.getElementById('evidenceBoard').classList.contains('hidden')) {
+          document.getElementById('evidenceBoard').classList.remove('hidden');
+          document.getElementById('masterCertificate').classList.remove('hidden');
+          playSuccessSound();
+        }
+      } else {
+        loadQuestion();
+      }
+    };
+
+    // Render badges
+    function renderBadges() {
+      const badgesContainer = document.getElementById('badgesContainer');
+      badgesContainer.innerHTML = '';
+      
+      const badgeData = [
+        { id: 'stalemate', icon: 'fa-triangle-alert', title: 'Stalemate', color: 'blue' },
+        { id: 'deadPosition', icon: 'fa-circle-minus', title: 'Dead Position', color: 'green' },
+        { id: 'agreement', icon: 'fa-handshake', title: 'Agreement', color: 'purple' },
+        { id: 'threefold', icon: 'fa-rotate', title: 'Threefold', color: 'yellow' },
+        { id: 'fiftyMove', icon: 'fa-clock', title: '50-Move Rule', color: 'orange' }
+      ];
+      
+      badgeData.forEach(badge => {
+        const badgeDiv = document.createElement('div');
+        badgeDiv.className = `badge ${gameState.badges[badge.id] ? 'unlocked' : 'locked'} flex flex-col items-center`;
+        badgeDiv.id = `badge-${badge.id}`;
+        
+        const iconClass = badge.id === 'stalemate' ? 'fa-triangle-alert' :
+                         badge.id === 'deadPosition' ? 'fa-circle-minus' :
+                         badge.id === 'agreement' ? 'fa-handshake' :
+                         badge.id === 'threefold' ? 'fa-rotate' : 'fa-clock';
+        
+        const icon = `<i class="fa-solid ${iconClass} text-4xl"></i>`;
+        
+        const colorClass = badge.id === 'stalemate' ? 'text-blue-600 bg-blue-100 border-blue-300' :
+                          badge.id === 'deadPosition' ? 'text-green-600 bg-green-100 border-green-300' :
+                          badge.id === 'agreement' ? 'text-purple-600 bg-purple-100 border-purple-300' :
+                          badge.id === 'threefold' ? 'text-yellow-600 bg-yellow-100 border-yellow-300' : 'text-orange-600 bg-orange-100 border-orange-300';
+        
+        const unlockedClass = badge.id === 'stalemate' ? 'text-blue-500 bg-blue-200 border-blue-400' :
+                             badge.id === 'deadPosition' ? 'text-green-500 bg-green-200 border-green-400' :
+                             badge.id === 'agreement' ? 'text-purple-500 bg-purple-200 border-purple-400' :
+                             badge.id === 'threefold' ? 'text-yellow-500 bg-yellow-200 border-yellow-400' : 'text-orange-500 bg-orange-200 border-orange-400';
+        
+        badgeDiv.innerHTML = `
+          <div class="w-24 h-24 ${gameState.badges[badge.id] ? unlockedClass : colorClass} rounded-2xl flex items-center justify-center border-2 shadow-lg">
+            ${icon}
+          </div>
+          <span class="mt-2 font-bold text-gray-700">${badge.title}</span>
+          ${gameState.badges[badge.id] ? '<i class="fa-solid fa-check text-green-600"></i>' : ''}
+        `;
+        
+        badgesContainer.appendChild(badgeDiv);
+      });
+    }
+
+    // Update badge state
+    function updateBadge(type) {
+      const badge = document.getElementById(`badge-${type}`);
+      if (badge && !badge.classList.contains('unlocked')) {
+        badge.classList.remove('locked');
+        badge.classList.add('unlocked');
+        badge.innerHTML = badge.innerHTML.replace('<i class="fa-solid fa-check text-green-600"></i>', '<i class="fa-solid fa-check text-green-600"></i>') + '<i class="fa-solid fa-check text-green-600"></i>';
+      }
+    }
+
+    // Text-to-speech for cards
+    function readCard(element, type) {
+      const cardText = element.querySelector('h3').textContent + '. ' + element.querySelector('p').textContent;
+      const utterance = new SpeechSynthesisUtterance(cardText);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Sound effects (using simple beeps since we can't load external files)
+    function playCorrectSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 523.25; // C5
+      gainNode.gain.value = 0.1;
+      
+      oscillator.start();
+      
+      // Play a second note
+      setTimeout(() => {
+        oscillator.frequency.value = 659.25; // E5
+      }, 150);
+      
+      setTimeout(() => {
+        oscillator.frequency.value = 783.99; // G5
+      }, 300);
+      
+      setTimeout(() => {
+        oscillator.stop();
+      }, 450);
+    }
+
+    function playWrongSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sawtooth';
+      oscillator.frequency.value = 220; // A3
+      gainNode.gain.value = 0.1;
+      
+      oscillator.start();
+      
+      // Play a second note
+      setTimeout(() => {
+        oscillator.frequency.value = 185; // G#3
+      }, 200);
+      
+      setTimeout(() => {
+        oscillator.stop();
+      }, 400);
+    }
+
+    function playBadgeSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 880; // A5
+      gainNode.gain.value = 0.1;
+      
+      oscillator.start();
+      
+      // Play a chord
+      setTimeout(() => {
+        oscillator.frequency.value = 1108.73; // C#6
+      }, 100);
+      
+      setTimeout(() => {
+        oscillator.frequency.value = 1318.51; // E6
+      }, 200);
+      
+      setTimeout(() => {
+        oscillator.frequency.value = 1661.22; // G#6
+      }, 300);
+      
+      setTimeout(() => {
+        oscillator.stop();
+      }, 500);
+    }
+
+    function playSuccessSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'triangle';
+      oscillator.frequency.value = 523.25; // C5
+      gainNode.gain.value = 0.1;
+      
+      oscillator.start();
+      
+      // Play a victory melody
+      setTimeout(() => {
+        oscillator.frequency.value = 659.25; // E5
+      }, 200);
+      
+      setTimeout(() => {
+        oscillator.frequency.value = 783.99; // G5
+      }, 400);
+      
+      setTimeout(() => {
+        oscillator.frequency.value = 1046.50; // C6
+      }, 600);
+      
+      setTimeout(() => {
+        oscillator.frequency.value = 1318.51; // E6
+      }, 800);
+      
+      setTimeout(() => {
+        oscillator.stop();
+      }, 1000);
+    }
+
+    // Check if user has entered name on load
+    window.onload = () => {
+      document.getElementById('nameModal').classList.remove('hidden');
+      lucide.createIcons();
+    };
+  </script>
+
+</body>
+</html>
